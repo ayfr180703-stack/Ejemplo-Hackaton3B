@@ -2,7 +2,10 @@
 
 Plan previsto: publicar el tablero en Cloudflare.
 
-Pendiente de decidir por el equipo:
-- Qué servicio de Cloudflare se usará (por ejemplo, Pages para un sitio estático).
-- Quién tiene la cuenta y quién despliega.
-- Si el tablero será estático (datos ya procesados) o necesita servidor.
+**Ojo:** el tablero actual usa Streamlit, que necesita un servidor de Python. Cloudflare Pages solo publica páginas estáticas. Opciones:
+
+1. **Local (respaldo siempre disponible):** `streamlit run dashboard/app.py` en la computadora de la presentación.
+2. **Página estática en Cloudflare Pages:** exportar las tablas finales a archivos y hacer una página con gráficas (más trabajo).
+3. **Streamlit Community Cloud u otro servicio con servidor:** más rápido, pero no es Cloudflare.
+
+Pendiente de decidir por el equipo: cuál opción, quién tiene la cuenta y quién despliega.

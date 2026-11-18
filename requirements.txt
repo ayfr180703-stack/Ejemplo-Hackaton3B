@@ -1,5 +1,6 @@
-pandas
-openpyxl
+pandas>=2.2
 numpy
-streamlit
+openpyxl
+streamlit>=1.50
 plotly
+pytest

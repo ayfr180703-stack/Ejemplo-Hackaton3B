@@ -1,0 +1,9 @@
+tipo,tienda,periodo,categoria,detalle
+Gasto atípico,T017,2026-08-01,energia,energia x2.6
+Gasto atípico,T005,2026-09-01,mantenimiento,mantenimiento x4.0
+Gasto atípico,T002,2026-10-01,nomina,nomina x1.45
+Costo de mercancía alto,T008,2026-09-01,costo_mercancia,costo ~87% de la venta
+Costo de mercancía alto,T008,2026-10-01,costo_mercancia,costo ~87% de la venta
+Diferencia venta vs depósito,T020,2026-09-14,efectivo,faltante de 7% en la semana
+Diferencia venta vs depósito,T003,2026-10-05,efectivo,faltante de 5% en la semana
+Diferencia venta vs depósito,T022,2026-10-19,efectivo,faltante de 9% en la semana

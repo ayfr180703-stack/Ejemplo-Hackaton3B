@@ -8,7 +8,7 @@ Reto: **Reto 7, control financiero y flujo de efectivo por tienda** (ver [CONTEX
 
 | Carpeta | Contenido | Entregable de la ficha |
 |---------|-----------|------------------------|
-| `data/` | Datos de ejemplo o sintéticos (ingresos, gastos, depósitos por tienda) | Base para todo |
+| `data/` | Datos sintéticos de ejemplo y su generador (ingresos, gastos, depósitos por tienda) | Base para todo |
 | `src/consolidacion/` | Limpieza y vista de ingresos, gastos y margen por tienda o región, con filtro por periodo | Vista consolidada |
 | `src/alertas/` | Reglas de gastos fuera de patrón y de diferencias entre venta y depósito | Detección y lista priorizada de alertas |
 | `src/proyeccion/` | Flujo de efectivo de una tienda nueva en sus primeros meses | Proyección simple |
@@ -40,4 +40,10 @@ Reto: **Reto 7, control financiero y flujo de efectivo por tienda** (ver [CONTEX
 python -m venv .venv
 source .venv/bin/activate      # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+python data/generar_datos.py   # opcional: vuelve a crear los datos de ejemplo
+streamlit run dashboard/app.py # abre el tablero
+python -m pytest -q            # corre las pruebas
 ```
+
+El plan paso a paso está en [docs/PLAN.md](docs/PLAN.md).
