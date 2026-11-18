@@ -1,13 +1,15 @@
-"""Utilidades comunes: rutas, carga y validación de los datos.
+"""Utilidades comunes del motor: rutas, esquema de datos, carga y validación.
 
-Esquema esperado (archivos CSV con encabezados, en la carpeta data/):
-  <prefijo>tiendas.csv    -> tienda, region, fecha_apertura
-  <prefijo>ventas.csv     -> tienda, fecha, venta          (diario)
+Esquema (archivos CSV con encabezados, en la carpeta data/). Es el contrato de
+datos del equipo; si cambia, hay que avisar y actualizar CONTEXT.md.
+
+  <prefijo>tiendas.csv    -> tienda, region, fecha_apertura   (+ formato, opcional)
+  <prefijo>ventas.csv     -> tienda, fecha, venta             (punto de venta, diario)
   <prefijo>gastos.csv     -> tienda, fecha, categoria, monto
-  <prefijo>depositos.csv  -> tienda, fecha, deposito       (diario)
+  <prefijo>depositos.csv  -> tienda, fecha, deposito          (banco, diario)
 
-Si los datos reales del reto vienen en otro formato, lo único que hay que
-cambiar es esta función de carga: el resto del proyecto usa estas 4 tablas.
+Si los datos reales llegan con otro formato, se transforman en data/limpieza.py
+y el resto del proyecto no cambia.
 """
 from pathlib import Path
 
@@ -28,13 +30,22 @@ FECHAS = {
     "gastos": ["fecha"],
     "depositos": ["fecha"],
 }
-
+FORMATO_POR_DEFECTO = "Estándar"
 CATEGORIA_COSTO = "costo_mercancia"
 
 
 def mes_de(serie_fechas):
     """Primer día del mes de cada fecha."""
     return serie_fechas.dt.to_period("M").dt.to_timestamp()
+
+
+def completar_tiendas(tiendas):
+    """Agrega la columna 'formato' si el catálogo no la trae."""
+    tiendas = tiendas.copy()
+    if "formato" not in tiendas.columns:
+        tiendas["formato"] = FORMATO_POR_DEFECTO
+    tiendas["formato"] = tiendas["formato"].fillna(FORMATO_POR_DEFECTO)
+    return tiendas[["tienda", "region", "formato", "fecha_apertura"]]
 
 
 def cargar_datos(carpeta=None, prefijo="ejemplo_"):
@@ -47,8 +58,8 @@ def cargar_datos(carpeta=None, prefijo="ejemplo_"):
         faltan = [c for c in columnas if c not in df.columns]
         if faltan:
             raise ValueError(f"{ruta.name}: faltan las columnas {faltan}")
-        tablas[nombre] = df[columnas]
-    return tablas["tiendas"], tablas["ventas"], tablas["gastos"], tablas["depositos"]
+        tablas[nombre] = df[columnas + (["formato"] if nombre == "tiendas" and "formato" in df.columns else [])]
+    return completar_tiendas(tablas["tiendas"]), tablas["ventas"], tablas["gastos"], tablas["depositos"]
 
 
 def validar_datos(tiendas, ventas, gastos, depositos):
@@ -72,8 +83,7 @@ def validar_datos(tiendas, ventas, gastos, depositos):
     if (gastos["monto"] < 0).any():
         problemas.append("gastos: hay montos negativos (¿devoluciones o notas de crédito?).")
     sin_deposito = len(
-        ventas.merge(depositos, on=["tienda", "fecha"], how="left")
-        .query("deposito.isna()")
+        ventas.merge(depositos, on=["tienda", "fecha"], how="left").query("deposito.isna()")
     )
     if sin_deposito:
         problemas.append(f"{sin_deposito} día(s) con venta y sin depósito registrado.")

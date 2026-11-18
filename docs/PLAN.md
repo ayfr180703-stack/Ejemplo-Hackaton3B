@@ -1,83 +1,91 @@
 # Plan de trabajo, Reto 7: control financiero y flujo de efectivo por tienda
 
-Está pensado para avanzarlo por partes, una persona o las cinco. Cada fase dice qué archivo tocar, qué hacer y cuándo se considera terminada. Las fases 1 a 5 corresponden a los 4 entregables de la ficha (`CONTEXT.md`) más el tablero.
+Sigue el plan de roles del equipo (5 integrantes, un territorio por persona). Si una sola persona tiene que hacer varios roles, el orden recomendado está más abajo.
 
-## Estado de partida
+Los datos y criterios oficiales se entregan el sábado 21 de noviembre a las 9:00 am. Si difieren de lo que hay aquí, **prevalece lo que indique el organizador**.
 
-| Pieza | Estado |
-|-------|--------|
-| Datos de ejemplo (sintéticos) y generador | Listo (`data/generar_datos.py`) |
-| Consolidado de ingresos, gastos y margen | Listo, falta ajustar a los datos reales |
-| Reglas de alertas con motivo y acción sugerida | Listas, falta ajustar umbrales a los datos reales |
-| Proyección de tienda nueva (3 escenarios) | Lista, falta definir supuestos con el equipo |
-| Tablero (Streamlit) | Listo con 4 pestañas |
-| Pruebas automáticas | 6 pruebas que pasan |
+## Qué ya está hecho (con datos de ejemplo)
 
-Para verlo corriendo: `pip install -r requirements.txt`, luego `streamlit run dashboard/app.py`. Para correr las pruebas: `python -m pytest -q`.
+| Pieza | Rol | Estado |
+|-------|-----|--------|
+| Contrato de datos y endpoints | Líder técnico | Listo en `CONTEXT.md` |
+| Limpieza de CSV sucios (`data/limpieza.py`) | Líder técnico | Lista, con 5 pruebas |
+| Consolidado, conciliación, cuadre y auditoría (`motor/conciliacion.py`) | Conciliación | Listo, con pruebas |
+| Alertas: efectivo, gasto atípico, costo de mercancía y tienda nueva (`motor/alertas.py`) | Alertas y QA | Listas. Detectan los 11 problemas inyectados con 4 falsas alarmas, todas de severidad media |
+| Proyección y punto de equilibrio (`motor/proyeccion.py`) | Alertas y QA | Lista. Reproduce el ejemplo de la propuesta (mes 6, acumulado -$128,439) |
+| Catálogo de acciones (`motor/acciones.py`) | Nube, gráficas y acciones | Listo |
+| API (`api/main.py`) | Alertas y QA | Lista, con pruebas |
+| Tablero local de respaldo (`dashboard/app.py`) | Frontend | Listo |
+| Interfaz web (`frontend/`) | Frontend | **Pendiente** |
+| Despliegue en la nube (`infra/`) | Nube | **Pendiente** |
+| Capa de inteligencia artificial (`/ai`) | Líder técnico | **Pendiente**, se deja para el final |
 
-## Fase 1. Datos (la base de todo)
-- **Archivos:** `data/`, `src/comun.py`.
-- **Qué hacer:** cuando lleguen los datos reales del reto, convertirlos a las 4 tablas de `src/comun.py` (tiendas, ventas, gastos, depósitos). Si el formato es distinto, solo se cambia la función `cargar_datos`.
-- **Revisar:** correr `validar_datos` y leer cada aviso (tiendas fuera del catálogo, días sin depósito, montos negativos, duplicados).
-- **Listo cuando:** la pestaña "Cuadre y supuestos" muestra los datos sin avisos, o los avisos están anotados en `docs/supuestos.md`.
+Para correrlo: `pip install -r requirements.txt`, luego `python -m pytest -q`, `uvicorn api.main:app --reload` o `streamlit run dashboard/app.py`.
 
-## Fase 2. Vista consolidada (entregable 1)
-- **Archivos:** `src/consolidacion/consolidar.py`, pestaña "Consolidado".
-- **Qué hacer:** confirmar qué cuenta como "gasto" en los datos reales (¿incluye el costo de mercancía?). Ajustar las categorías si cambian los nombres.
-- **Listo cuando:** ingresos, gastos y margen por tienda y por región, con filtro de periodo, y la verificación de cuadre en verde.
+## Pendientes por rol
 
-## Fase 3. Alertas de gasto atípico (entregable 2)
-- **Archivos:** `src/alertas/alertas.py` (función `alertas_gastos`).
-- **Qué hacer:** probar los umbrales con los datos reales (40% sobre el historial propio, 60% sobre las tiendas de su región, mínimo $5,000). Contar cuántas alertas salen y revisar a mano 10 de ellas.
-- **Meta:** pocas falsas alarmas. Si salen demasiadas, subir el monto mínimo o los porcentajes.
-- **Listo cuando:** cada alerta explica por qué salió y la mayoría de las revisadas a mano tienen sentido.
+### Líder técnico: datos, nube e inteligencia artificial (`/data`, `/ai`, `CONTEXT.md`)
+- [ ] Con los CSV del evento: correr `limpiar_tabla` en cada archivo y leer la bitácora (qué se corrigió y qué se descartó).
+- [ ] Si las columnas o categorías de los archivos reales son distintas, agregar los alias en `data/limpieza.py` y actualizar `CONTEXT.md`.
+- [ ] Capa de IA (al final): resumen ejecutivo en 3 viñetas y buscador. La IA solo recibe tablas ya calculadas y nunca calcula. Endpoints: `GET /api/ai/resumen-ejecutivo` y `POST /api/ai/preguntar`.
 
-## Fase 4. Diferencias entre venta y depósito (parte del entregable 2)
-- **Archivos:** `src/alertas/alertas.py` (función `alertas_efectivo`).
-- **Qué hacer:** confirmar con el reto cuándo se deposita (mismo día, día siguiente) y ajustar la comparación. Hoy se compara por semana para no alertar por depósitos que se hacen al día siguiente.
-- **Listo cuando:** las diferencias grandes aparecen como alertas y los desfases normales no.
+### Conciliación y rigor contable (`motor/conciliacion.py`)
+- [ ] Confirmar qué cuenta como "gasto" en los datos reales (¿incluye costo de mercancía?).
+- [ ] Confirmar cuándo se deposita (mismo día, día siguiente) y si conviene conciliar por semana (hoy se hace así).
+- [ ] Auditar 3 tiendas al azar a mano contra los CSV originales: `GET /auditoria/{tienda}?mes=` debe coincidir al centavo con lo que muestra el tablero.
 
-## Fase 5. Proyección de flujo de efectivo de una tienda nueva (entregable 3)
-- **Archivos:** `src/proyeccion/proyeccion.py`, pestaña "Proyección tienda nueva".
-- **Qué hacer:** definir con el equipo la inversión inicial y los escenarios (pesimista 85% de la venta, optimista 110%). Anotarlos en `docs/supuestos.md`.
-- **Listo cuando:** se muestra el mes en que el flujo mensual se vuelve positivo, el mes en que se recupera la inversión y el efectivo máximo que necesita la tienda.
+### Alertas, proyección, API y pruebas (`motor/alertas.py`, `motor/proyeccion.py`, `api/`, `tests/`)
+- [ ] Probar los umbrales con los datos reales (ver `docs/supuestos.md`): contar alertas, revisar 10 a mano y anotar cuántas son falsas alarmas.
+- [ ] Ajustar los supuestos de la proyección con el equipo (inversión, escenarios).
+- [ ] Probar la carga en vivo con archivos rotos: duplicados, fechas mal escritas, columnas faltantes y montos negativos.
 
-## Fase 6. Lista priorizada con acción sugerida (entregable 4)
-- **Archivos:** `src/alertas/alertas.py` (función `generar_alertas`), pestaña "Alertas".
-- **Qué hacer:** revisar el texto de cada acción sugerida para que sea algo que una persona de finanzas pueda hacer mañana. Ajustar los cortes de severidad (alta desde $30,000, media desde $10,000).
-- **Listo cuando:** la lista sale ordenada por monto en riesgo y se puede descargar en CSV.
+### Interfaz (`/frontend`)
+- [ ] Construir la pantalla descrita en `frontend/README.md` conectada a la API.
+- [ ] Mientras tanto, el tablero de respaldo ya muestra las cuatro tarjetas, las alertas y la proyección.
 
-## Fase 7. Presentación (20% de la calificación)
-- **Archivos:** `docs/` (agregar `presentacion.md` con el guion).
-- **Guion de 5 minutos:** (1) el problema en una frase, (2) el consolidado, (3) las 3 alertas más importantes con su acción, (4) la proyección de una tienda nueva, (5) cómo sabemos que las cifras cuadran.
-- **Ensayo:** correr el tablero completo con el cable de red desconectado, para no depender de internet.
-- **Listo cuando:** un directivo entiende el resultado y la acción en pocos minutos.
+### Nube, gráficas y acciones (`/infra`, `motor/acciones.py`, `/frontend/components/charts/`)
+- [ ] Decidir dónde se publica la API (ver `infra/README.md`) y probar el despliegue antes del sábado.
+- [ ] Gráficas: ingresos contra gastos por tienda y región, y curva de flujo acumulado marcando el mes de punto de equilibrio.
+- [ ] Revisar el texto de cada acción en `motor/acciones.py`: que sea algo que una persona de finanzas pueda hacer mañana.
+- [ ] Plan B: copia que corre en local y video corto de la demo.
 
-## Fase 8. Publicar en Cloudflare
-- **Archivos:** `docs/despliegue.md`.
-- **Qué hacer:** decidir si el tablero se publica en vivo o solo se muestra desde una computadora. Streamlit necesita un servidor, así que si se quiere en Cloudflare hay que cambiar el tablero a una página estática. Tener siempre la opción de correrlo local como respaldo.
+## Orden recomendado si una sola persona hace varios roles
 
-## Orden recomendado si lo haces tú solo
+1. **Antes del sábado:** probar que todo corre en tu computadora, leer `docs/supuestos.md` y marcar lo que no estés de acuerdo; decidir el despliegue; empezar las gráficas.
+2. **Sábado 9:30:** con los CSV oficiales, limpieza y revisión de que las cifras cuadran. Todo lo demás depende de esto.
+3. Conciliación y alertas con datos reales (ajustar umbrales).
+4. Proyección de tienda nueva.
+5. Tablero y acciones.
+6. Auditoría de 3 tiendas, congelar la versión y ensayar.
+7. Capa de inteligencia artificial, solo si sobra tiempo.
 
-1. Fase 1 y 2 (con datos reales, lo más importante).
-2. Fase 3 y 4 (alertas).
-3. Fase 6 (lista priorizada).
-4. Fase 5 (proyección).
-5. Fase 7 (presentación).
-6. Fase 8 (publicar), solo si sobra tiempo.
+**Si falta tiempo:** una sola regla de gasto atípico (promedio de 3 meses), la IA solo como resumen ejecutivo, y conservar el cuadre al centavo, la conciliación y la acción sugerida, que cubren la mayor parte de la rúbrica.
 
-## Reparto entre 5 personas (para cuando se integren)
+## Día del evento (sábado 21 de noviembre)
 
-| Persona | Fases |
-|---------|-------|
-| 1. Datos | 1 y 2 |
-| 2. Alertas de gasto | 3 y 6 |
-| 3. Efectivo y depósitos | 4 |
-| 4. Proyección | 5 |
-| 5. Tablero y presentación | 7 y 8 |
+| Horario | Qué se hace |
+|---------|-------------|
+| 9:00 - 9:30 | Lectura del reto, reglas y criterios. Anotar dudas. Confirmar que el entorno de nube responde |
+| 9:30 - 10:00 | Inspeccionar los CSV oficiales, limpiar, estandarizar columnas y actualizar `CONTEXT.md` |
+| 10:00 - 1:30 | Desarrollo en paralelo (cada quien en su carpeta y su rama) |
+| 1:30 - 2:00 | Comida y corte de alcance: qué funciona y qué falta. Aplicar el plan "si falta tiempo" |
+| 2:00 - 3:45 | Integración, despliegue y pruebas con datos atípicos |
+| 3:45 - 4:30 | Auditar 3 tiendas al centavo contra los CSV crudos. Congelar la demo |
+| 4:30 - 5:00 | Ensayo del recorrido de 3 minutos: problema, demo, impacto en números y siguientes pasos |
+| 5:00 | Presentación |
+
+## Guion de la demo
+
+1. Abrir el tablero: cuatro tarjetas (ventas, gastos, margen neto, diferencia de efectivo).
+2. Filtrar una región y abrir la alerta crítica con su explicación y su acción.
+3. Abrir la curva de flujo de una tienda nueva y señalar el mes de punto de equilibrio.
+4. Mostrar que las cifras cuadran (`GET /cuadre` o la pestaña "Cuadre").
+5. Cargar un CSV nuevo en vivo y ver cómo se recalcula todo.
 
 ## Riesgos
 
-- Los datos reales pueden traer otro formato: la Fase 1 es la que más puede retrasar todo.
+- Los datos reales pueden traer otro formato: es lo que más puede retrasar todo. Por eso `limpieza.py` y el contrato de datos van primero.
 - Un modelo complejo vale menos que reglas simples que finanzas pueda explicar.
-- Si las cifras no cuadran entre vistas, se pierde puntos de "rigor de los números" (25%).
+- Si las cifras no cuadran entre vistas, se pierden puntos de "rigor de los números" (25%).
+- Si falla la red durante la presentación: copia local y video de respaldo.
+- Las pruebas de este repositorio usan datos inventados: **que pasen no garantiza que las reglas funcionen bien con los datos reales**.

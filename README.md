@@ -2,37 +2,23 @@
 
 Problema financiero, con la finalidad de practicar la colaboración entre 5 miembros del equipo para sacar una solución.
 
-Reto: **Reto 7, control financiero y flujo de efectivo por tienda** (ver [CONTEXT.md](CONTEXT.md)).
+Reto: **Reto 7, control financiero y flujo de efectivo por tienda** (ficha y contrato de datos en [CONTEXT.md](CONTEXT.md)). El plan paso a paso está en [docs/PLAN.md](docs/PLAN.md).
 
-## Estructura
+## Estructura (un territorio por rol)
 
-| Carpeta | Contenido | Entregable de la ficha |
-|---------|-----------|------------------------|
-| `data/` | Datos sintéticos de ejemplo y su generador (ingresos, gastos, depósitos por tienda) | Base para todo |
-| `src/consolidacion/` | Limpieza y vista de ingresos, gastos y margen por tienda o región, con filtro por periodo | Vista consolidada |
-| `src/alertas/` | Reglas de gastos fuera de patrón y de diferencias entre venta y depósito | Detección y lista priorizada de alertas |
-| `src/proyeccion/` | Flujo de efectivo de una tienda nueva en sus primeros meses | Proyección simple |
-| `dashboard/` | Tablero para la presentación | Claridad de presentación |
-| `docs/` | Supuestos, plan de despliegue y guion de la presentación | Rigor de los números |
-
-## Reparto sugerido (ajustar entre todos)
-
-| Área | Responsable |
-|------|-------------|
-| Datos y consolidación | |
-| Alertas | |
-| Proyección de flujo de efectivo | |
-| Tablero | |
-| Presentación y supuestos | |
-
-## Forma de trabajo
-
-1. Nadie sube directo a la rama `main`. Cada persona trabaja en su propia rama, con nombre `area/nombre` (por ejemplo `alertas/brandon`).
-2. Los cambios entran por pull request (solicitud para integrar cambios), y al menos otra persona lo revisa antes de integrarlo.
-3. Commits chicos y con mensaje claro, en español.
-4. Cada supuesto de negocio se anota en `docs/supuestos.md`.
-5. No se suben datos reales de la empresa ni claves. Solo datos de ejemplo.
-6. Antes de integrar, se revisa que las cifras cuadren entre vistas (ingresos, gastos y margen).
+| Carpeta | Contenido |
+|---------|-----------|
+| `data/` | Contrato de datos, `limpieza.py` (convierte CSV sucios al formato del equipo), datos sintéticos de ejemplo y su generador |
+| `motor/conciliacion.py` | Consolidado de ingresos, gastos y margen; conciliación de venta contra depósito; cuadre y auditoría |
+| `motor/alertas.py` | Reglas de alerta explicables, con severidad (Crítica, Alta, Media) |
+| `motor/acciones.py` | Catálogo de acciones sugeridas por tipo de alerta, con el monto en el texto |
+| `motor/proyeccion.py` | Proyección de flujo de efectivo y punto de equilibrio de una tienda nueva |
+| `api/` | API en FastAPI que expone el motor (`/kpis`, `/alertas`, `/proyecciones/{tienda}`, `/cargar-csv`) |
+| `frontend/` | Interfaz web del equipo (pendiente, ver `frontend/README.md`) |
+| `dashboard/` | Tablero local de respaldo en Streamlit, para la demo si falla la red |
+| `infra/` | Despliegue en la nube (ver `infra/README.md`) |
+| `tests/` | Pruebas automáticas (25) |
+| `docs/` | Plan, supuestos y guion de la presentación |
 
 ## Cómo correrlo
 
@@ -42,8 +28,17 @@ source .venv/bin/activate      # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 python data/generar_datos.py   # opcional: vuelve a crear los datos de ejemplo
-streamlit run dashboard/app.py # abre el tablero
-python -m pytest -q            # corre las pruebas
+python -m pytest -q            # pruebas
+uvicorn api.main:app --reload  # API, con documentación en http://127.0.0.1:8000/docs
+streamlit run dashboard/app.py # tablero local de respaldo
 ```
 
-El plan paso a paso está en [docs/PLAN.md](docs/PLAN.md).
+## Forma de trabajo
+
+1. Nadie sube directo a la rama `main`. Cada persona trabaja en su carpeta y en su propia rama (por ejemplo `alertas/nombre`).
+2. Los cambios entran por pull request (solicitud para integrar cambios), y al menos otra persona lo revisa antes de integrarlo.
+3. Commits chicos y con mensaje claro, en español.
+4. Cada supuesto de negocio se anota en `docs/supuestos.md`.
+5. Si se cambia una columna del contrato de datos, se avisa al equipo antes de subirlo.
+6. No se suben datos reales de la empresa ni claves. Solo datos de ejemplo o los entregados en el evento.
+7. Antes de integrar, se corre `python -m pytest -q` y se revisa que las cifras cuadren entre vistas.

@@ -23,10 +23,38 @@ Claridad de presentación    20%       Un directivo entiende el resultado y la a
 
 REGLAS PARA LAS IA:
 1. No inventar cifras. Todo número debe venir de los datos del repositorio o de un supuesto escrito en docs/supuestos.md.
-2. Las reglas de alerta deben ser simples y explicables: cada alerta indica qué regla la disparó y por qué.
-3. Antes de dar un resultado por bueno, comprobar que las cifras cuadran entre vistas (ingresos - gastos = margen, por tienda y por región).
-4. Usar solo datos de ejemplo o sintéticos. No subir datos reales de la empresa, claves ni credenciales.
-5. Dejar el código comentado y en español, para que cualquier integrante del equipo lo entienda y lo pueda defender.
-6. Trabajar en una rama propia y proponer los cambios por pull request. No tocar la rama principal.
-7. Priorizar lo que pide la ficha: utilidad para finanzas (30%), calidad de las alertas (25%), rigor de los números (25%) y claridad de presentación (20%).
+2. Las reglas de alerta deben ser simples y explicables: cada alerta indica qué regla la disparó y con qué cifras.
+3. Antes de dar un resultado por bueno, comprobar que las cifras cuadran entre vistas (ventas - gastos = margen, por tienda y por región).
+4. Usar solo datos de ejemplo o los datos entregados en el evento. No subir datos reales de la empresa, claves ni credenciales.
+5. La IA nunca calcula: solo redacta o filtra sobre resultados ya calculados por motor/. Si una pregunta no se puede responder con los datos, lo dice.
+6. Dejar el código comentado y en español, para que cualquier integrante lo entienda y lo pueda defender.
+7. Cada integrante trabaja en su carpeta y en su propia rama; los cambios entran por pull request.
 8. Si algo es ambiguo, anotarlo como pregunta en docs/supuestos.md en lugar de decidir en silencio.
+
+## CONTRATO DE DATOS
+
+Si alguien cambia un campo, lo avisa en el chat del equipo antes de subirlo.
+
+Archivos CSV con encabezados (en `data/`, con el prefijo `ejemplo_` en los de práctica):
+
+| Archivo | Columnas obligatorias | Notas |
+|---------|----------------------|-------|
+| `tiendas.csv` | `tienda`, `region`, `fecha_apertura` | `formato` es opcional (si falta, todas son "Estándar"). Se supone que las tiendas abren el día 1 de un mes |
+| `ventas.csv` | `tienda`, `fecha`, `venta` | Venta diaria del punto de venta |
+| `gastos.csv` | `tienda`, `fecha`, `categoria`, `monto` | Categorías: `costo_mercancia`, `renta`, `luz`, `nomina`, `mantenimiento`, `merma` |
+| `depositos.csv` | `tienda`, `fecha`, `deposito` | Depósito bancario diario |
+
+Los archivos reales se convierten a este formato con `data/limpieza.py` (reconoce otros nombres de columna, fechas dd/mm/aaaa, montos con `$` y comas, duplicados y vacíos, y deja una bitácora de lo que corrigió).
+
+## ENDPOINTS (api/main.py)
+
+| Endpoint | Qué regresa |
+|----------|-------------|
+| `GET /kpis?region=&tienda=&desde=&hasta=` | Ventas, gastos, margen, depósitos y diferencia de efectivo |
+| `GET /consolidado?nivel=tienda\|region` | Ingresos, gastos y margen por mes |
+| `GET /alertas?severidad=&tipo=&region=&tienda=` | Alertas priorizadas con motivo y acción sugerida |
+| `GET /proyecciones/{tienda}` | Curva de flujo, supuestos y mes de punto de equilibrio |
+| `GET /cuadre` · `GET /auditoria/{tienda}?mes=` | Verificación de que las cifras cuadran y recálculo desde datos crudos |
+| `POST /cargar-csv` | Carga, limpia y valida los 4 archivos en vivo |
+
+Formato de cada alerta: `prioridad`, `tipo`, `tienda`, `region`, `periodo`, `categoria`, `valor`, `referencia`, `desviacion_pct`, `monto_en_riesgo`, `severidad` (Crítica, Alta o Media), `motivo`, `accion_sugerida`.
