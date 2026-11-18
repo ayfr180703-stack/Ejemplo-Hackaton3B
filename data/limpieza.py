@@ -6,10 +6,17 @@ Convierte archivos "sucios" al contrato de datos de motor/comun.py:
   - montos con signo de pesos, comas o paréntesis
   - nulos, duplicados y espacios de más
 
+También sabe leer el archivo mismo (leer_y_limpiar): CSV con coma, punto y coma,
+tabulador o barra vertical; codificación UTF-8 o de Windows (latin-1); Excel
+(.xlsx); y encabezados que no están en la primera fila.
+
 Cada función regresa (tabla_limpia, bitacora). La bitácora es una lista de
 textos que dice qué se corrigió y qué se descartó: nada se arregla en silencio.
 """
+import csv
+import io
 import re
+import statistics
 import unicodedata
 
 import pandas as pd
@@ -85,6 +92,101 @@ def _a_numero(serie):
     return numero.where(~negativo, -numero)
 
 
+# ------------------------------------------------------------------ lectura
+SEPARADORES = [",", ";", "\t", "|"]
+FILAS_PARA_ENCABEZADO = 40
+
+
+def _decodificar(contenido):
+    """UTF-8 (con o sin marca) y, si no se puede, latin-1 (Windows)."""
+    try:
+        return contenido.decode("utf-8-sig"), "utf-8"
+    except UnicodeDecodeError:
+        return contenido.decode("latin-1"), "latin-1"
+
+
+def _separador(lineas):
+    muestra = [l for l in lineas if l.strip()][:15]
+    if not muestra:
+        return ","
+    medianas = {d: statistics.median(l.count(d) for l in muestra) for d in SEPARADORES}
+    mejor = max(medianas, key=medianas.get)
+    return mejor if medianas[mejor] > 0 else ","
+
+
+def _leer_bruto(contenido, nombre_archivo, bitacora):
+    """Lee el archivo completo como texto, sin encabezado (todas las filas)."""
+    extension = nombre_archivo.lower().rsplit(".", 1)[-1] if "." in nombre_archivo else ""
+    if extension in ("xlsx", "xlsm"):
+        try:
+            hojas = pd.read_excel(io.BytesIO(contenido), sheet_name=None, header=None, dtype=str)
+        except Exception as error:  # noqa: BLE001
+            raise ValueError(f"No se pudo abrir el Excel '{nombre_archivo}': {error}") from error
+        for nombre_hoja, df in hojas.items():
+            if not df.dropna(how="all").empty:
+                if len(hojas) > 1:
+                    bitacora.append(f"El Excel tiene {len(hojas)} hojas; se usó la primera con datos: '{nombre_hoja}'.")
+                return df
+        raise ValueError(f"El Excel '{nombre_archivo}' no tiene datos.")
+    if extension == "xls":
+        raise ValueError("El formato .xls (Excel antiguo) no se lee: guardarlo como .xlsx o CSV.")
+    texto, codificacion = _decodificar(contenido)
+    if not texto.strip():
+        raise ValueError(f"El archivo '{nombre_archivo}' está vacío.")
+    separador = _separador(texto.splitlines())
+    filas = list(csv.reader(io.StringIO(texto), delimiter=separador))
+    ancho = max(len(f) for f in filas)
+    df = pd.DataFrame([f + [None] * (ancho - len(f)) for f in filas], dtype="string")
+    if codificacion != "utf-8" or separador != ",":
+        nombres = {",": "coma", ";": "punto y coma", "\t": "tabulador", "|": "barra vertical"}
+        bitacora.append(f"Archivo leído con codificación {codificacion} y separador de {nombres[separador]}.")
+    return df
+
+
+def _conocidas(tipo):
+    """Todos los nombres de columna (ya normalizados) que se reconocen para un tipo de tabla."""
+    esperadas = COLUMNAS[tipo] + (["formato"] if tipo == "tiendas" else [])
+    nombres = {}
+    for esperada in esperadas:
+        for alias in [esperada] + ALIAS_COLUMNAS[esperada]:
+            nombres.setdefault(alias, esperada)
+    return nombres
+
+
+def _fila_encabezado(df, tipo):
+    """Primera fila (entre las primeras 40) que más columnas reconocidas tiene."""
+    conocidas = _conocidas(tipo)
+    obligatorias = set(COLUMNAS[tipo])
+    mejor_fila, mejor_puntaje = None, 0
+    for i in range(min(FILAS_PARA_ENCABEZADO, len(df))):
+        encontradas = {conocidas[n] for n in (_nombre_columna(c) for c in df.iloc[i].dropna()) if n in conocidas}
+        puntaje = len(encontradas & obligatorias)
+        if puntaje > mejor_puntaje:
+            mejor_fila, mejor_puntaje = i, puntaje
+    if mejor_fila is None or mejor_puntaje < 2:
+        primeras = [str(c) for c in df.iloc[0].dropna()][:8] if len(df) else []
+        raise ValueError(
+            f"No se encontró una fila de encabezados para la tabla de {tipo}. Se esperaban columnas como "
+            f"{COLUMNAS[tipo]}. Primera fila del archivo: {primeras}")
+    return mejor_fila
+
+
+def leer_y_limpiar(contenido, nombre_archivo, tipo):
+    """Lee un archivo (bytes) CSV o Excel de cualquier forma razonable y lo deja
+    limpio. Regresa (tabla, bitacora)."""
+    bitacora = []
+    bruto = _leer_bruto(contenido, nombre_archivo, bitacora)
+    fila = _fila_encabezado(bruto, tipo)
+    if fila > 0:
+        bitacora.append(f"Los encabezados estaban en la fila {fila + 1}; se ignoraron las {fila} fila(s) de arriba.")
+    encabezados = bruto.iloc[fila].tolist()
+    datos = bruto.iloc[fila + 1:].copy()
+    datos.columns = [str(c) if pd.notna(c) else f"columna_{i}" for i, c in enumerate(encabezados)]
+    datos = datos.dropna(how="all").dropna(axis="columns", how="all")
+    limpia, bitacora_tabla = limpiar_tabla(datos, tipo)
+    return limpia, bitacora + bitacora_tabla
+
+
 def limpiar_tabla(df, tipo):
     """Limpia una tabla de tipo 'tiendas', 'ventas', 'gastos' o 'depositos'."""
     bitacora = []
@@ -113,6 +215,12 @@ def limpiar_tabla(df, tipo):
             perdidas = int(antes - df[col].notna().sum())
             if perdidas:
                 bitacora.append(f"{perdidas} valor(es) en '{col}' no eran números y quedaron vacíos.")
+
+    llave = "tienda"
+    totales = df[llave].astype("string").str.lower().str.match(r"^\s*(total|subtotal|suma|gran total)\b", na=False)
+    if totales.any():
+        bitacora.append(f"Se descartaron {int(totales.sum())} fila(s) de totales o subtotales.")
+        df = df[~totales]
 
     nulos = df[COLUMNAS[tipo]].isna().any(axis=1)
     if nulos.any():

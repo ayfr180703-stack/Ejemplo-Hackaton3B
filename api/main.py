@@ -4,14 +4,12 @@ La documentación interactiva queda en http://127.0.0.1:8000/docs
 
 Ninguna cifra sale de otro lugar que no sea el motor de cálculo (carpeta motor/).
 """
-import io
 import json
 from typing import Optional
 
-import pandas as pd
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
-from data.limpieza import limpiar_tabla
+from data.limpieza import leer_y_limpiar
 from motor import conciliacion
 from motor.alertas import generar_alertas
 from motor.comun import cargar_datos, completar_tiendas, validar_datos
@@ -116,18 +114,14 @@ def auditoria(tienda: str, mes: str = Query(..., description="AAAA-MM-01")):
 @app.post("/cargar-csv")
 async def cargar_csv(tiendas: UploadFile = File(...), ventas: UploadFile = File(...),
                      gastos: UploadFile = File(...), depositos: UploadFile = File(...)):
-    """Carga, limpia y valida los 4 archivos; si todo bien, reemplaza los datos en uso."""
+    """Carga, limpia y valida los 4 archivos (CSV o Excel .xlsx); si todo bien, reemplaza los datos en uso."""
     limpias, bitacora = {}, {}
     for nombre, archivo in [("tiendas", tiendas), ("ventas", ventas), ("gastos", gastos), ("depositos", depositos)]:
         contenido = await archivo.read()
         try:
-            df = pd.read_csv(io.BytesIO(contenido), encoding="utf-8-sig", dtype=str)
-        except Exception as error:  # noqa: BLE001
-            raise HTTPException(422, f"No se pudo leer {archivo.filename}: {error}") from error
-        try:
-            limpias[nombre], bitacora[nombre] = limpiar_tabla(df, nombre)
+            limpias[nombre], bitacora[nombre] = leer_y_limpiar(contenido, archivo.filename or f"{nombre}.csv", nombre)
         except ValueError as error:
-            raise HTTPException(422, str(error)) from error
+            raise HTTPException(422, f"{archivo.filename}: {error}") from error
     tiendas_df = completar_tiendas(limpias["tiendas"])
     problemas = validar_datos(tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
     _estado["datos"] = (tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])

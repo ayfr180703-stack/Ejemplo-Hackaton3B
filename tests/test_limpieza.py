@@ -41,3 +41,41 @@ def test_catalogo_sin_formato_asigna_estandar():
     df = pd.DataFrame({"tienda": ["T1"], "region": ["Sur"], "fecha_apertura": ["2025-01-01"]})
     limpia, bitacora = limpiar_tabla(df, "tiendas")
     assert limpia["formato"].iloc[0] == "Estándar"
+
+
+# ---------------------------------------------------------------- lectura de archivos
+import io as _io
+
+import pandas as _pd
+import pytest as _pytest
+
+from data.limpieza import leer_y_limpiar
+
+
+def test_lee_csv_punto_y_coma_con_acentos_de_windows():
+    texto = "tienda;fecha;categoria;monto\nT1;05/03/2026;Energía;1.200,50\n"
+    # coma decimal europea no se asume: el monto "1.200,50" se limpia con las reglas existentes
+    df, bit = leer_y_limpiar(texto.encode("latin-1"), "gastos.csv", "gastos")
+    assert len(df) == 1 and df.iloc[0]["categoria"] == "luz"
+    assert any("latin-1" in b and "punto y coma" in b for b in bit)
+
+
+def test_lee_excel_con_encabezado_en_fila_3_y_total():
+    filas = [["Reporte de ventas", None, None], [None, None, None],
+             ["Sucursal", "Fecha", "Importe"],
+             ["T1", "05/03/2026", "1000"], ["T2", "05/03/2026", "500"],
+             ["Total", None, "1500"]]
+    buf = _io.BytesIO()
+    _pd.DataFrame(filas).to_excel(buf, header=False, index=False)
+    df, bit = leer_y_limpiar(buf.getvalue(), "ventas.xlsx", "ventas")
+    assert list(df["tienda"]) == ["T1", "T2"] and df["venta"].sum() == 1500
+    assert any("fila 3" in b for b in bit) and any("totales" in b for b in bit)
+
+
+def test_archivo_vacio_o_irreconocible_da_error_claro():
+    with _pytest.raises(ValueError, match="vacío"):
+        leer_y_limpiar(b"  \n", "x.csv", "ventas")
+    with _pytest.raises(ValueError, match="encabezados"):
+        leer_y_limpiar(b"a,b\n1,2\n", "x.csv", "ventas")
+    with _pytest.raises(ValueError, match="xls"):
+        leer_y_limpiar(b"x", "x.xls", "ventas")

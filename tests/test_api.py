@@ -64,4 +64,4 @@ def test_cargar_csv_sucio_en_vivo(cliente):
 def test_cargar_csv_con_columnas_faltantes_regresa_error_claro(cliente):
     archivos = {n: (f"{n}.csv", io.BytesIO(b"a,b\n1,2\n"), "text/csv") for n in ["tiendas", "ventas", "gastos", "depositos"]}
     r = cliente.post("/cargar-csv", files=archivos)
-    assert r.status_code == 422 and "Faltan las columnas" in r.json()["detail"]
+    assert r.status_code == 422 and "fila de encabezados" in r.json()["detail"]
