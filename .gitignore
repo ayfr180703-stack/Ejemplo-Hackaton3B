@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Secretos y datos reales (nunca subir)
+.env
+*.key
+data/real/
+data/*.xlsx
+!data/ejemplo_*.xlsx
+
+# Sistema
+.DS_Store
+Thumbs.db

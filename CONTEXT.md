@@ -22,5 +22,11 @@ Rigor de los números        25%       Las cifras cuadran entre vistas y los sup
 Claridad de presentación    20%       Un directivo entiende el resultado y la acción recomendada en pocos minutos.
 
 REGLAS PARA LAS IA:
-
-
+1. No inventar cifras. Todo número debe venir de los datos del repositorio o de un supuesto escrito en docs/supuestos.md.
+2. Las reglas de alerta deben ser simples y explicables: cada alerta indica qué regla la disparó y por qué.
+3. Antes de dar un resultado por bueno, comprobar que las cifras cuadran entre vistas (ingresos - gastos = margen, por tienda y por región).
+4. Usar solo datos de ejemplo o sintéticos. No subir datos reales de la empresa, claves ni credenciales.
+5. Dejar el código comentado y en español, para que cualquier integrante del equipo lo entienda y lo pueda defender.
+6. Trabajar en una rama propia y proponer los cambios por pull request. No tocar la rama principal.
+7. Priorizar lo que pide la ficha: utilidad para finanzas (30%), calidad de las alertas (25%), rigor de los números (25%) y claridad de presentación (20%).
+8. Si algo es ambiguo, anotarlo como pregunta en docs/supuestos.md en lugar de decidir en silencio.
