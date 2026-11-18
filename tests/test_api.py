@@ -65,3 +65,48 @@ def test_cargar_csv_con_columnas_faltantes_regresa_error_claro(cliente):
     archivos = {n: (f"{n}.csv", io.BytesIO(b"a,b\n1,2\n"), "text/csv") for n in ["tiendas", "ventas", "gastos", "depositos"]}
     r = cliente.post("/cargar-csv", files=archivos)
     assert r.status_code == 422 and "fila de encabezados" in r.json()["detail"]
+
+
+# ---------------------------------------------------------------- robustez (Fase 6)
+def _csv(texto):
+    return io.BytesIO(texto.encode("utf-8"))
+
+
+def _archivos(**cambios):
+    base = {
+        "tiendas": "tienda,region,fecha_apertura\nT1,Norte,2026-01-01\nT2,Norte,2026-02-01\n",
+        "ventas": "tienda,fecha,venta\nT1,2026-03-05,1000\nT2,2026-03-05,500\n",
+        "gastos": "tienda,fecha,categoria,monto\nT1,2026-03-31,luz,200\n",
+        "depositos": "tienda,fecha,deposito\nT1,2026-03-05,990\nT2,2026-03-05,500\n",
+    }
+    base.update(cambios)
+    return {n: (f"{n}.csv", _csv(t), "text/csv") for n, t in base.items()}
+
+
+def test_cabeceras_cors_y_tiempo(cliente):
+    r = cliente.get("/health", headers={"Origin": "http://localhost:5173"})
+    assert r.headers["access-control-allow-origin"] in ("*", "http://localhost:5173")
+    assert float(r.headers["x-tiempo-ms"]) >= 0
+
+
+def test_carga_con_duplicados_fechas_malas_y_negativos_no_se_rompe(cliente):
+    antes = cliente.get("/kpis").json()
+    r = cliente.post("/cargar-csv", files=_archivos(
+        ventas="tienda,fecha,venta\nT1,2026-03-05,1000\nT1,2026-03-05,1000\nT2,no-es-fecha,500\nT2,2026-03-06,-300\nT2,2026-03-07,abc\n"))
+    assert r.status_code == 200, r.text
+    cuerpo = r.json()
+    assert cuerpo["filas"]["ventas"] < 5 and cuerpo["bitacora"]["ventas"]
+    assert cliente.get("/kpis").status_code == 200
+    assert cliente.get("/kpis").json() != antes
+
+
+def test_archivo_en_la_ranura_equivocada_da_422_y_conserva_datos(cliente):
+    antes = cliente.get("/kpis").json()
+    r = cliente.post("/cargar-csv", files=_archivos(ventas="tienda,fecha,categoria,monto\nT1,2026-03-05,luz,200\n"))
+    assert r.status_code == 422 and "ventas.csv" in r.json()["detail"]
+    assert cliente.get("/kpis").json() == antes
+
+
+def test_archivo_vacio_da_422(cliente):
+    r = cliente.post("/cargar-csv", files=_archivos(gastos="   \n"))
+    assert r.status_code == 422 and "vacío" in r.json()["detail"]

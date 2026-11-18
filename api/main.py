@@ -5,9 +5,12 @@ La documentación interactiva queda en http://127.0.0.1:8000/docs
 Ninguna cifra sale de otro lugar que no sea el motor de cálculo (carpeta motor/).
 """
 import json
+import os
+import time
 from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 from data.limpieza import leer_y_limpiar
 from motor import conciliacion
@@ -17,6 +20,21 @@ from motor.proyeccion import ESCENARIOS, calibrar_supuestos, curva_historica, pr
 
 app = FastAPI(title="Reto 7 · Control financiero por tienda", version="0.1.0")
 _estado = {"datos": None, "origen": None}
+
+# CORS: permite que la interfaz web (otro dominio/puerto) consulte la API.
+# En producción se limita con la variable CORS_ORIGENES="https://mi-app.pages.dev,http://localhost:5173".
+_origenes = [o.strip() for o in os.getenv("CORS_ORIGENES", "*").split(",") if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=_origenes, allow_methods=["*"], allow_headers=["*"],
+                   expose_headers=["X-Tiempo-ms"])
+
+
+@app.middleware("http")
+async def medir_tiempo(request: Request, call_next):
+    """Agrega el encabezado X-Tiempo-ms a cada respuesta (para vigilar que la demo sea ágil)."""
+    inicio = time.perf_counter()
+    respuesta = await call_next(request)
+    respuesta.headers["X-Tiempo-ms"] = f"{(time.perf_counter() - inicio) * 1000:.0f}"
+    return respuesta
 
 
 def _datos():
@@ -122,8 +140,14 @@ async def cargar_csv(tiendas: UploadFile = File(...), ventas: UploadFile = File(
             limpias[nombre], bitacora[nombre] = leer_y_limpiar(contenido, archivo.filename or f"{nombre}.csv", nombre)
         except ValueError as error:
             raise HTTPException(422, f"{archivo.filename}: {error}") from error
-    tiendas_df = completar_tiendas(limpias["tiendas"])
-    problemas = validar_datos(tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
+    try:
+        tiendas_df = completar_tiendas(limpias["tiendas"])
+        problemas = validar_datos(tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
+        # Prueba de humo: el motor debe poder calcular con estos datos antes de reemplazar los vigentes.
+        conciliacion.kpis(tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
+        generar_alertas(tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
+    except Exception as error:  # noqa: BLE001
+        raise HTTPException(422, f"Los archivos se leyeron pero no se pudieron calcular (se conservan los datos anteriores): {error}") from error
     _estado["datos"] = (tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
     _estado["origen"] = "carga manual (POST /cargar-csv)"
     return {"ok": True, "filas": {k: len(v) for k, v in limpias.items()}, "bitacora": bitacora, "problemas": problemas}

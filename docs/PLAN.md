@@ -49,19 +49,29 @@ Para correrlo: `pip install -r requirements.txt`, luego `python -m pytest -q`, `
 - [ ] Revisar el texto de cada acción en `motor/acciones.py`: que sea algo que una persona de finanzas pueda hacer mañana.
 - [ ] Plan B: copia que corre en local y video corto de la demo.
 
-## Orden recomendado si una sola persona hace varios roles
+## Plan de práctica: miércoles 18 y jueves 19 de noviembre
 
-1. **Antes del sábado:** probar que todo corre en tu computadora, leer `docs/supuestos.md` y marcar lo que no estés de acuerdo; decidir el despliegue; empezar las gráficas.
-2. **Sábado 9:30:** con los CSV oficiales, limpieza y revisión de que las cifras cuadran. Todo lo demás depende de esto.
-3. Conciliación y alertas con datos reales (ajustar umbrales).
-4. Proyección de tienda nueva.
-5. Tablero y acciones.
-6. Auditoría de 3 tiendas, congelar la versión y ensayar.
-7. Capa de inteligencia artificial, solo si sobra tiempo.
+Todo el reto se practica con datos inventados antes del sábado; ese día solo se revisan los CSV reales contra lo que ya funciona.
+
+Decisiones tomadas: interfaz en **React + Vite**; publicación en **Cloudflare**; la IA se decide después (probablemente DeepSeek).
+
+| Bloque | Cuándo | Qué | Estado |
+|--------|--------|-----|--------|
+| 1 | Mié, tarde | API robusta: CORS, medición de tiempos, pruebas con archivos dañados | Hecho |
+| 2 | Mié, tarde | Ensayo con datos sucios "reales" simulados: ajustar umbrales y contar falsas alarmas | Pendiente |
+| 3 | Mié, tarde | Revisar textos de acciones; endpoint de escenarios (pesimista, base, optimista) con inversión editable | Pendiente |
+| 4 | Mié, noche | Interfaz parte 1: proyecto React + Vite, tarjetas y filtro por región | Pendiente |
+| 5 | Jue, mañana | Interfaz parte 2: gráficas, flujo acumulado con punto de equilibrio, alertas con acción, carga en vivo | Pendiente |
+| 6 | Jue, mediodía | Despliegue en Cloudflare (o plan B: copia local y video) | Pendiente |
+| 7 | Jue, tarde | Auditoría de 3 tiendas al centavo y cuadre entre vistas | Pendiente |
+| 8 | Jue, tarde | Capa de IA (resumen y buscador), solo si hay tiempo | Pendiente |
+| 9 | Jue, cierre | Congelar versión y ensayar la demo de 3 minutos | Pendiente |
 
 **Si falta tiempo:** una sola regla de gasto atípico (promedio de 3 meses), la IA solo como resumen ejecutivo, y conservar el cuadre al centavo, la conciliación y la acción sugerida, que cubren la mayor parte de la rúbrica.
 
 ## Día del evento (sábado 21 de noviembre)
+
+Con la práctica hecha, este día se usa para meter los CSV oficiales, ajustar alias y umbrales, y ensayar.
 
 | Horario | Qué se hace |
 |---------|-------------|
