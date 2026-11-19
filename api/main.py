@@ -86,21 +86,14 @@ def alertas(region: Optional[str] = None, tienda: Optional[str] = None, severida
     return _registros(al)
 
 
-@app.get("/proyecciones/{tienda}")
-def proyeccion(tienda: str, meses: int = Query(36, ge=6, le=120), inversion_inicial: float = 0.0,
-               escenario: str = "Base", venta_inicial: Optional[float] = None, crecimiento_mensual: Optional[float] = None,
-               margen_bruto: Optional[float] = None, gastos_fijos: Optional[float] = None, venta_madura: Optional[float] = None):
-    """Curva de flujo y mes de punto de equilibrio. Los supuestos se pueden editar
-    por parámetro; si no se mandan, se calibran con las tiendas ya abiertas.
-    Para una tienda existente se agrega su venta real por mes de operación."""
+def _proyectar(tienda, meses, inversion_inicial, escenario, **cambios):
     tiendas, ventas, gastos, _ = _datos()
     if tienda not in set(tiendas["tienda"]):
         raise HTTPException(404, f"No existe la tienda {tienda}")
     if escenario not in ESCENARIOS:
         raise HTTPException(422, f"Escenario inválido. Opciones: {list(ESCENARIOS)}")
     supuestos = calibrar_supuestos(curva_historica(tiendas, ventas, gastos))
-    for nombre, valor in [("venta_inicial", venta_inicial), ("crecimiento_mensual", crecimiento_mensual), ("margen_bruto", margen_bruto),
-                          ("gastos_fijos", gastos_fijos), ("venta_madura", venta_madura)]:
+    for nombre, valor in cambios.items():
         if valor is not None:
             supuestos[nombre] = valor
     tabla, resumen = proyectar_tienda_nueva(**supuestos, meses=meses, inversion_inicial=inversion_inicial, **ESCENARIOS[escenario])
@@ -110,6 +103,26 @@ def proyeccion(tienda: str, meses: int = Query(36, ge=6, le=120), inversion_inic
     real = real[real["mes_n"] >= 1].groupby("mes_n", as_index=False)["venta"].sum().rename(columns={"venta": "venta_real"})
     tabla = tabla.merge(real, on="mes_n", how="left")
     return {"tienda": tienda, "escenario": escenario, "supuestos": supuestos, "resumen": resumen, "curva": _registros(tabla)}
+
+
+@app.get("/proyecciones/{tienda}")
+def proyeccion(tienda: str, meses: int = Query(36, ge=6, le=120), inversion_inicial: float = Query(0.0, ge=0),
+               escenario: str = "Base", venta_inicial: Optional[float] = None, crecimiento_mensual: Optional[float] = None,
+               margen_bruto: Optional[float] = None, gastos_fijos: Optional[float] = None, venta_madura: Optional[float] = None):
+    """Curva de flujo y mes de punto de equilibrio. Los supuestos se pueden editar
+    por parámetro; si no se mandan, se calibran con las tiendas ya abiertas.
+    Para una tienda existente se agrega su venta real por mes de operación."""
+    return _proyectar(tienda, meses, inversion_inicial, escenario, venta_inicial=venta_inicial,
+                      crecimiento_mensual=crecimiento_mensual, margen_bruto=margen_bruto,
+                      gastos_fijos=gastos_fijos, venta_madura=venta_madura)
+
+
+@app.get("/proyecciones/{tienda}/escenarios")
+def proyeccion_escenarios(tienda: str, meses: int = Query(36, ge=6, le=120), inversion_inicial: float = Query(5_500_000.0, ge=0)):
+    """Los tres escenarios juntos (Pesimista, Base, Optimista) para compararlos en una gráfica.
+    Por defecto la inversión es de $5.5 millones (cifra pública de referencia); es editable."""
+    return {"tienda": tienda, "inversion_inicial": inversion_inicial,
+            "escenarios": {e: _proyectar(tienda, meses, inversion_inicial, e) for e in ESCENARIOS}}
 
 
 @app.get("/cuadre")

@@ -110,3 +110,15 @@ def test_archivo_en_la_ranura_equivocada_da_422_y_conserva_datos(cliente):
 def test_archivo_vacio_da_422(cliente):
     r = cliente.post("/cargar-csv", files=_archivos(gastos="   \n"))
     assert r.status_code == 422 and "vacío" in r.json()["detail"]
+
+
+def test_escenarios_juntos_y_ordenados(cliente):
+    r = cliente.get("/proyecciones/T028/escenarios", params={"meses": 48, "inversion_inicial": 2_000_000}).json()
+    assert set(r["escenarios"]) == {"Pesimista", "Base", "Optimista"}
+    acum = {e: x["curva"][-1]["flujo_acumulado"] for e, x in r["escenarios"].items()}
+    assert acum["Pesimista"] < acum["Base"] < acum["Optimista"]
+
+
+def test_inversion_negativa_o_tienda_inexistente(cliente):
+    assert cliente.get("/proyecciones/T028", params={"inversion_inicial": -5}).status_code == 422
+    assert cliente.get("/proyecciones/NOEXISTE/escenarios").status_code == 404
