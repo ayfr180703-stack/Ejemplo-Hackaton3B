@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { pedir } from "./api.js";
 import Tarjetas from "./components/Tarjetas.jsx";
 import Alertas from "./components/Alertas.jsx";
+import IngresosGastos from "./components/charts/IngresosGastos.jsx";
+import FlujoAcumulado from "./components/charts/FlujoAcumulado.jsx";
+import CargaArchivos from "./components/CargaArchivos.jsx";
 
 export default function App() {
   const [opciones, setOpciones] = useState({ regiones: [], tiendas: [] });
@@ -9,17 +12,18 @@ export default function App() {
   const [kpis, setKpis] = useState(null);
   const [alertas, setAlertas] = useState(null);
   const [error, setError] = useState("");
+  const [version, setVersion] = useState(0); // sube cada vez que se cargan archivos nuevos
 
   useEffect(() => {
     pedir("/filtros").then(setOpciones).catch((e) => setError(`No se pudo conectar con la API: ${e.message}`));
-  }, []);
+  }, [version]);
 
   useEffect(() => {
     setError("");
     Promise.all([pedir("/kpis", filtro), pedir("/alertas", filtro)])
       .then(([k, a]) => { setKpis(k); setAlertas(a); })
       .catch((e) => setError(e.message));
-  }, [filtro]);
+  }, [filtro, version]);
 
   const cambiar = (campo) => (e) => setFiltro({ ...filtro, [campo]: e.target.value });
 
@@ -50,7 +54,10 @@ export default function App() {
       </header>
       {error && <p className="error">{error}</p>}
       <Tarjetas kpis={kpis} />
+      <IngresosGastos filtro={filtro} version={version} />
       <Alertas alertas={alertas} />
+      <FlujoAcumulado tiendas={opciones.tiendas} version={version} />
+      <CargaArchivos alCargar={() => { setFiltro({ region: "", tienda: "", desde: "", hasta: "" }); setVersion((v) => v + 1); }} />
     </main>
   );
 }

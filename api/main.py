@@ -71,13 +71,25 @@ def kpis(region: Optional[str] = None, tienda: Optional[str] = None,
 
 
 @app.get("/consolidado")
-def consolidado(nivel: str = Query("tienda", pattern="^(tienda|region)$"), region: Optional[str] = None,
-                desde: Optional[str] = None, hasta: Optional[str] = None):
-    """Ingresos, gastos y margen por mes y por tienda o región."""
+def consolidado(nivel: str = Query("tienda", pattern="^(tienda|region|total)$"), region: Optional[str] = None,
+                tienda: Optional[str] = None, desde: Optional[str] = None, hasta: Optional[str] = None):
+    """Ingresos, gastos y margen por mes y por tienda, región o total (suma de lo filtrado)."""
     tiendas, ventas, gastos, _ = _datos()
+    if nivel == "total":
+        cons = conciliacion.consolidado_mensual(tiendas, ventas, gastos, "tienda")
+        if region:
+            cons = cons[cons["region"] == region]
+        if tienda:
+            cons = cons[cons["tienda"] == tienda]
+        cons = conciliacion.filtrar_periodo(cons, desde, hasta)
+        cons = cons.groupby("periodo", as_index=False)[["ingresos", "gastos", "margen"]].sum()
+        cons["margen_pct"] = (cons["margen"] / cons["ingresos"]).where(cons["ingresos"] != 0, 0.0)
+        return _registros(cons)
     cons = conciliacion.consolidado_mensual(tiendas, ventas, gastos, nivel)
     if region:
         cons = cons[cons["region"] == region]
+    if tienda and nivel == "tienda":
+        cons = cons[cons["tienda"] == tienda]
     return _registros(conciliacion.filtrar_periodo(cons, desde, hasta))
 
 

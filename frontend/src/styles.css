@@ -22,3 +22,5 @@ select, input { padding: 6px 8px; border: 1px solid var(--borde); border-radius:
 .alerta-cabecera { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .alerta-cabecera .monto { margin-left: auto; font-weight: 700; }
 .alerta-detalle { background: var(--gris); border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: .9rem; }
+button { background: var(--azul); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }

@@ -127,3 +127,12 @@ def test_inversion_negativa_o_tienda_inexistente(cliente):
 def test_filtros_para_la_interfaz(cliente):
     f = cliente.get("/filtros").json()
     assert "Centro" in f["regiones"] and len(f["tiendas"]) == 30 and f["desde"] < f["hasta"]
+
+
+def test_consolidado_total_suma_lo_filtrado(cliente):
+    total = cliente.get("/consolidado", params={"nivel": "total"}).json()
+    k = cliente.get("/kpis").json()
+    assert sum(f["ingresos"] for f in total) == pytest.approx(k["ventas"])
+    assert sum(f["gastos"] for f in total) == pytest.approx(k["gastos"])
+    una = cliente.get("/consolidado", params={"nivel": "total", "tienda": "T001"}).json()
+    assert 0 < sum(f["ingresos"] for f in una) < k["ventas"]

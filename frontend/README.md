@@ -1,6 +1,6 @@
 # Frontend (interfaz ejecutiva)
 
-React + Vite. Hecho: tarjetas, filtros y panel de alertas. Falta: gráficas y carga de archivos en vivo.
+React + Vite. Hecho: tarjetas, filtros, alertas, gráficas (ingresos contra gastos, flujo acumulado con escenarios) y carga de archivos en vivo.
 
 ## Cómo correrlo
 
