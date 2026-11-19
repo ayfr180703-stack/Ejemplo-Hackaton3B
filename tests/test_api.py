@@ -122,3 +122,8 @@ def test_escenarios_juntos_y_ordenados(cliente):
 def test_inversion_negativa_o_tienda_inexistente(cliente):
     assert cliente.get("/proyecciones/T028", params={"inversion_inicial": -5}).status_code == 422
     assert cliente.get("/proyecciones/NOEXISTE/escenarios").status_code == 404
+
+
+def test_filtros_para_la_interfaz(cliente):
+    f = cliente.get("/filtros").json()
+    assert "Centro" in f["regiones"] and len(f["tiendas"]) == 30 and f["desde"] < f["hasta"]

@@ -54,6 +54,14 @@ def salud():
     return {"ok": True, "origen": _estado["origen"], "tiendas": len(tiendas), "dias_con_venta": int(ventas["fecha"].nunique())}
 
 
+@app.get("/filtros")
+def filtros():
+    """Opciones para los filtros de la interfaz: regiones, tiendas y rango de fechas con datos."""
+    tiendas, ventas, *_ = _datos()
+    return {"regiones": sorted(tiendas["region"].unique().tolist()), "tiendas": sorted(tiendas["tienda"].unique().tolist()),
+            "desde": ventas["fecha"].min().strftime("%Y-%m-%d"), "hasta": ventas["fecha"].max().strftime("%Y-%m-%d")}
+
+
 @app.get("/kpis")
 def kpis(region: Optional[str] = None, tienda: Optional[str] = None,
          desde: Optional[str] = Query(None, description="AAAA-MM-DD"), hasta: Optional[str] = Query(None, description="AAAA-MM-DD")):

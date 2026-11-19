@@ -60,7 +60,7 @@ Decisiones tomadas: interfaz en **React + Vite**; publicación en **Cloudflare**
 | 1 | Mié, tarde | API robusta: CORS, medición de tiempos, pruebas con archivos dañados | Hecho |
 | 2 | Mié, tarde | Ensayo con datos sucios "reales" simulados: ajustar umbrales y contar falsas alarmas | Hecho |
 | 3 | Mié, tarde | Revisar textos de acciones; endpoint de escenarios (pesimista, base, optimista) con inversión editable | Hecho |
-| 4 | Mié, noche | Interfaz parte 1: proyecto React + Vite, tarjetas y filtro por región | Pendiente |
+| 4 | Mié, noche | Interfaz parte 1: proyecto React + Vite, tarjetas y filtro por región | Hecho |
 | 5 | Jue, mañana | Interfaz parte 2: gráficas, flujo acumulado con punto de equilibrio, alertas con acción, carga en vivo | Pendiente |
 | 6 | Jue, mediodía | Despliegue en Cloudflare (o plan B: copia local y video) | Pendiente |
 | 7 | Jue, tarde | Auditoría de 3 tiendas al centavo y cuadre entre vistas | Pendiente |

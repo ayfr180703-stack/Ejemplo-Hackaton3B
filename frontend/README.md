@@ -1,6 +1,15 @@
 # Frontend (interfaz ejecutiva)
 
-Pendiente: React + Vite según el plan del equipo. Este archivo deja el contrato para conectarse con la API.
+React + Vite. Hecho: tarjetas, filtros y panel de alertas. Falta: gráficas y carga de archivos en vivo.
+
+## Cómo correrlo
+
+```
+uvicorn api.main:app --reload          # terminal 1, desde la raíz del repositorio
+cd frontend && npm install && npm run dev   # terminal 2, abre http://localhost:5173
+```
+
+La dirección de la API se cambia con `VITE_API_URL` (ver `.env.example`).
 
 ## Pantalla sugerida
 
