@@ -1,5 +1,7 @@
 // Toda cifra sale de la API; aquí no se calcula nada.
-export const API = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+// En desarrollo (npm run dev) la API está en el puerto 8000. En la versión compilada, la API sirve
+// también la interfaz, así que se usa la misma dirección (sin configurar nada).
+export const API = (import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://127.0.0.1:8000" : "")).replace(/\/$/, "");
 
 function consulta(parametros) {
   const q = new URLSearchParams();

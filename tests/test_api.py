@@ -136,3 +136,12 @@ def test_consolidado_total_suma_lo_filtrado(cliente):
     assert sum(f["gastos"] for f in total) == pytest.approx(k["gastos"])
     una = cliente.get("/consolidado", params={"nivel": "total", "tienda": "T001"}).json()
     assert 0 < sum(f["ingresos"] for f in una) < k["ventas"]
+
+
+def test_la_api_sirve_la_interfaz_compilada(cliente):
+    from pathlib import Path
+    if not (Path(api_main.__file__).resolve().parent.parent / "frontend" / "dist").is_dir():
+        pytest.skip("la interfaz no está compilada")
+    r = cliente.get("/")
+    assert r.status_code == 200 and "text/html" in r.headers["content-type"]
+    assert cliente.get("/health").json()["ok"] is True

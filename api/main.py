@@ -6,11 +6,13 @@ Ninguna cifra sale de otro lugar que no sea el motor de cálculo (carpeta motor/
 """
 import json
 import os
+from pathlib import Path
 import time
 from typing import Optional
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from data.limpieza import leer_y_limpiar
 from motor import conciliacion
@@ -184,3 +186,10 @@ async def cargar_csv(tiendas: UploadFile = File(...), ventas: UploadFile = File(
     _estado["datos"] = (tiendas_df, limpias["ventas"], limpias["gastos"], limpias["depositos"])
     _estado["origen"] = "carga manual (POST /cargar-csv)"
     return {"ok": True, "filas": {k: len(v) for k, v in limpias.items()}, "bitacora": bitacora, "problemas": problemas}
+
+
+# Si la interfaz ya está compilada (frontend/dist), la API la sirve en "/": con un solo link
+# (por ejemplo, un túnel de Cloudflare) quedan publicadas la interfaz y los datos.
+_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _DIST.is_dir():
+    app.mount("/", StaticFiles(directory=_DIST, html=True), name="interfaz")
