@@ -145,3 +145,18 @@ def test_la_api_sirve_la_interfaz_compilada(cliente):
     r = cliente.get("/")
     assert r.status_code == 200 and "text/html" in r.headers["content-type"]
     assert cliente.get("/health").json()["ok"] is True
+
+
+@pytest.mark.parametrize("tienda", ["T020", "T009", "T024"])
+def test_auditoria_cuadra_al_centavo_con_los_csv_crudos(cliente, carpeta_datos, tienda):
+    """Recalcula con el módulo csv (sin pandas ni el motor) y compara con la API."""
+    import csv
+
+    def suma(nombre, columna):
+        with open(carpeta_datos / f"ejemplo_{nombre}.csv", encoding="utf-8") as f:
+            return sum(float(r[columna]) for r in csv.DictReader(f) if r["tienda"] == tienda and r["fecha"].startswith("2026-09"))
+
+    a = cliente.get(f"/auditoria/{tienda}", params={"mes": "2026-09-01"}).json()
+    assert a["ventas"] == pytest.approx(suma("ventas", "venta"), abs=0.01)
+    assert a["gastos"] == pytest.approx(suma("gastos", "monto"), abs=0.01)
+    assert a["depositos"] == pytest.approx(suma("depositos", "deposito"), abs=0.01)

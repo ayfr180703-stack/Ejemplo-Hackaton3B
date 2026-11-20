@@ -63,7 +63,7 @@ Decisiones tomadas: interfaz en **React + Vite**; publicación en **Cloudflare**
 | 4 | Mié, noche | Interfaz parte 1: proyecto React + Vite, tarjetas y filtro por región | Hecho |
 | 5 | Jue, mañana | Interfaz parte 2: gráficas, flujo acumulado con punto de equilibrio, alertas con acción, carga en vivo | Hecho |
 | 6 | Jue, mediodía | Despliegue en Cloudflare (o plan B: copia local y video) | Hecho: la API sirve la interfaz y se publica con un túnel de Cloudflare (ver README) |
-| 7 | Jue, tarde | Auditoría de 3 tiendas al centavo y cuadre entre vistas | Pendiente |
+| 7 | Jue, tarde | Auditoría de 3 tiendas al centavo y cuadre entre vistas | Hecho (3 tiendas contra los CSV crudos, con prueba automática) |
 | 8 | Jue, tarde | Capa de IA (resumen y buscador), solo si hay tiempo | Pendiente |
 | 9 | Jue, cierre | Congelar versión y ensayar la demo de 3 minutos | Pendiente |
 
@@ -84,13 +84,17 @@ Con la práctica hecha, este día se usa para meter los CSV oficiales, ajustar a
 | 4:30 - 5:00 | Ensayo del recorrido de 3 minutos: problema, demo, impacto en números y siguientes pasos |
 | 5:00 | Presentación |
 
-## Guion de la demo
+## Guion de la demo (3 minutos)
 
-1. Abrir el tablero: cuatro tarjetas (ventas, gastos, margen neto, diferencia de efectivo).
-2. Filtrar una región y abrir la alerta crítica con su explicación y su acción.
-3. Abrir la curva de flujo de una tienda nueva y señalar el mes de punto de equilibrio.
-4. Mostrar que las cifras cuadran (`GET /cuadre` o la pestaña "Cuadre").
-5. Cargar un CSV nuevo en vivo y ver cómo se recalcula todo.
+1. **Problema (20 s):** cada tienda tiene ventas, gastos y depósitos en archivos distintos; nadie ve en un solo lugar si el efectivo cuadra ni cuándo una tienda nueva recupera su inversión.
+2. **Tablero (30 s):** abrir el link. Las cuatro tarjetas (ventas, gastos, margen neto, diferencia de efectivo) y la gráfica de ingresos contra gastos por mes.
+3. **Alertas (45 s):** filtrar una región; abrir la alerta crítica y leer el motivo y la acción sugerida (qué hace finanzas mañana).
+4. **Tienda nueva (40 s):** bajar a la curva de flujo acumulado, mover la inversión, mostrar los tres escenarios y el mes de punto de equilibrio.
+5. **Rigor (25 s):** abrir `/cuadre` (5 revisiones que cuadran) y `/auditoria/T020?mes=2026-09-01`: coincide al centavo con los CSV originales.
+6. **Carga en vivo (20 s):** subir los 4 archivos y ver cómo se recalcula todo.
+7. **Cierre (10 s):** impacto en números (por ejemplo, dinero en riesgo detectado en las alertas críticas) y siguientes pasos.
+
+Plan B si falla la red: abrir `http://127.0.0.1:8000` en la misma computadora y mostrar el video de respaldo.
 
 ## Riesgos
 
