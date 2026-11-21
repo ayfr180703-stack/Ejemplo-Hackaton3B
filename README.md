@@ -14,10 +14,10 @@ Reto: **Reto 7, control financiero y flujo de efectivo por tienda** (ficha y con
 | `motor/acciones.py` | Catálogo de acciones sugeridas por tipo de alerta, con el monto en el texto |
 | `motor/proyeccion.py` | Proyección de flujo de efectivo y punto de equilibrio de una tienda nueva |
 | `api/` | API en FastAPI que expone el motor (`/kpis`, `/alertas`, `/proyecciones/{tienda}`, `/cargar-csv`) |
-| `frontend/` | Interfaz web del equipo (pendiente, ver `frontend/README.md`) |
+| `frontend/` | Interfaz web en React + Vite (tarjetas, filtros, gráficas, alertas, escenarios y carga de archivos); ver `frontend/README.md` |
 | `dashboard/` | Tablero local de respaldo en Streamlit, para la demo si falla la red |
 | `infra/` | Despliegue en la nube (ver `infra/README.md`) |
-| `tests/` | Pruebas automáticas (25) |
+| `tests/` | Pruebas automáticas (46) |
 | `docs/` | Plan, supuestos y guion de la presentación |
 
 ## Cómo correrlo
@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 python data/generar_datos.py   # opcional: vuelve a crear los datos de ejemplo
 python -m pytest -q            # pruebas
-uvicorn api.main:app --reload  # API, con documentación en http://127.0.0.1:8000/docs
+uvicorn api.main:app --reload  # API (y la interfaz compilada en "/"), con documentación en http://127.0.0.1:8000/docs
 streamlit run dashboard/app.py # tablero local de respaldo
 ```
 
